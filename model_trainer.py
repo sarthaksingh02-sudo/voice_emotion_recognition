@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
@@ -26,12 +27,14 @@ warnings.filterwarnings('ignore')
 
 from config import *
 from audio_processor import AudioProcessor
+from data_parser import CremaDataParser
 
 class EmotionModelTrainer:
     def __init__(self):
         self.audio_processor = AudioProcessor()
         self.scaler = StandardScaler()
         self.label_encoder = LabelEncoder()
+        self.imputer = SimpleImputer(strategy='mean')
         self.models = {}
         self.best_model = None
         self.best_score = 0.0
@@ -49,7 +52,7 @@ class EmotionModelTrainer:
                 emotion_label = emotion_dir.name.lower()
                 print(f"Processing {emotion_label} files...")
                 
-                audio_files = list(emotion_dir.glob("*.wav")) + list(emotion_dir.glob("*.mp3"))
+                audio_files = [f for f in emotion_dir.glob("*.wav")]
                 
                 for audio_file in audio_files:
                     try:
@@ -66,11 +69,21 @@ class EmotionModelTrainer:
     
     def prepare_data(self, features, labels):
         """Prepare data for training"""
+        # Convert to numpy array if needed
+        features = np.array(features)
+        
+        # Handle NaN values
+        print(f"Features shape before imputation: {features.shape}")
+        print(f"NaN count: {np.isnan(features).sum()}")
+        
+        # Impute missing values
+        features_imputed = self.imputer.fit_transform(features)
+        
         # Encode labels
         labels_encoded = self.label_encoder.fit_transform(labels)
         
         # Scale features
-        features_scaled = self.scaler.fit_transform(features)
+        features_scaled = self.scaler.fit_transform(features_imputed)
         
         # Split data
         X_train, X_test, y_train, y_test = train_test_split(
@@ -79,6 +92,9 @@ class EmotionModelTrainer:
             random_state=42, 
             stratify=labels_encoded
         )
+        
+        print(f"Final training shape: {X_train.shape}")
+        print(f"Final test shape: {X_test.shape}")
         
         return X_train, X_test, y_train, y_test
     
@@ -93,7 +109,7 @@ class EmotionModelTrainer:
             'Logistic Regression': LogisticRegression(random_state=42, max_iter=1000)
         }
         
-        results = {}\n        
+        results = {}
         for name, model in models.items():
             print(f"Training {name}...")
             
@@ -185,7 +201,7 @@ class EmotionModelTrainer:
         plt.xlabel('Predicted Label')
         plt.tight_layout()
         plt.savefig(f'{model_name.lower().replace(" ", "_")}_confusion_matrix.png')
-        plt.show()
+        plt.close()  # Close plot instead of showing it
         
         return accuracy_score(y_test, y_pred)
     
@@ -193,11 +209,10 @@ class EmotionModelTrainer:
         """Save trained models and preprocessing objects"""
         print("Saving models and preprocessing objects...")
         
-        # Save scaler
+        # Save preprocessing objects
         joblib.dump(self.scaler, SCALER_PATH)
-        
-        # Save label encoder
         joblib.dump(self.label_encoder, LABEL_ENCODER_PATH)
+        joblib.dump(self.imputer, MODEL_DIR / 'imputer.pkl')
         
         # Save best traditional model
         if self.best_model_name != "Neural Network":
@@ -224,6 +239,7 @@ class EmotionModelTrainer:
         try:
             self.scaler = joblib.load(SCALER_PATH)
             self.label_encoder = joblib.load(LABEL_ENCODER_PATH)
+            self.imputer = joblib.load(MODEL_DIR / 'imputer.pkl')
             
             # Load metadata
             with open(MODEL_DIR / 'metadata.pkl', 'rb') as f:
@@ -253,8 +269,9 @@ class EmotionModelTrainer:
             print("No model loaded!")
             return None
         
-        # Scale features
-        features_scaled = self.scaler.transform([audio_features])
+        # Impute and scale features
+        features_imputed = self.imputer.transform([audio_features])
+        features_scaled = self.scaler.transform(features_imputed)
         
         # Predict
         if self.best_model_name == "Neural Network":
@@ -276,7 +293,25 @@ class EmotionModelTrainer:
         print("Starting complete training pipeline...")
         
         # Load data
-        features, labels = self.load_data_from_directory(data_dir)
+        data_parser = CremaDataParser()
+        audio_files, emotions = data_parser.load_crema_data(data_dir)
+        features = []
+        
+        print("Extracting features from audio files...")
+        # Limit to first 500 files for faster testing
+        limited_files = audio_files[:500]
+        limited_emotions = emotions[:500]
+        
+        for i, audio_file in enumerate(limited_files):
+            if (i + 1) % 50 == 0:
+                print(f"Processed {i + 1}/{len(limited_files)} files")
+            
+            feature_vector = self.audio_processor.process_audio_file(audio_file)
+            if feature_vector is not None:
+                features.append(feature_vector)
+        
+        # Update labels to match processed features
+        labels = limited_emotions[:len(features)]
         print(f"Loaded {len(features)} samples with {len(np.unique(labels))} emotion classes")
         
         # Prepare data
