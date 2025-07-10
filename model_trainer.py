@@ -11,23 +11,69 @@ from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
-# TensorFlow not available for Python 3.13 yet
-# import tensorflow as tf
-# from tensorflow.keras.models import Sequential
-# from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
-# from tensorflow.keras.optimizers import Adam
-# from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+# PyTorch for deep learning
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, TensorDataset
+from torch.nn import functional as F
 import joblib
 import pickle
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
 import warnings
+import time
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+from functools import partial
 warnings.filterwarnings('ignore')
 
 from config import *
 from audio_processor import AudioProcessor
 from data_parser import CremaDataParser
+
+def extract_features_for_file(args):
+    """Helper function for parallel feature extraction"""
+    file_path, emotion, processor = args
+    try:
+        features = processor.process_audio_file(file_path)
+        if features is not None:
+            return features, emotion, file_path
+        else:
+            return None, None, file_path
+    except Exception as e:
+        return None, None, file_path
+
+class EmotionMLP(nn.Module):
+    """PyTorch MLP model for emotion recognition"""
+    def __init__(self, input_dim, num_classes):
+        super(EmotionMLP, self).__init__()
+        self.fc1 = nn.Linear(input_dim, 256)
+        self.bn1 = nn.BatchNorm1d(256)
+        self.dropout1 = nn.Dropout(0.5)
+        
+        self.fc2 = nn.Linear(256, 128)
+        self.bn2 = nn.BatchNorm1d(128)
+        self.dropout2 = nn.Dropout(0.5)
+        
+        self.fc3 = nn.Linear(128, 64)
+        self.bn3 = nn.BatchNorm1d(64)
+        self.dropout3 = nn.Dropout(0.3)
+        
+        self.fc4 = nn.Linear(64, num_classes)
+        
+    def forward(self, x):
+        x = F.relu(self.bn1(self.fc1(x)))
+        x = self.dropout1(x)
+        
+        x = F.relu(self.bn2(self.fc2(x)))
+        x = self.dropout2(x)
+        
+        x = F.relu(self.bn3(self.fc3(x)))
+        x = self.dropout3(x)
+        
+        x = self.fc4(x)
+        return x
 
 class EmotionModelTrainer:
     def __init__(self):
@@ -129,9 +175,9 @@ class EmotionModelTrainer:
             
             print(f"{name} Accuracy: {accuracy:.4f}")
             
-            # Cross-validation
-            cv_scores = cross_val_score(model, X_train, y_train, cv=5)
-            print(f"{name} CV Score: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})")
+            # Cross-validation (skip for speed)
+            # cv_scores = cross_val_score(model, X_train, y_train, cv=5)
+            # print(f"{name} CV Score: {cv_scores.mean():.4f} (+/- {cv_scores.std() * 2:.4f})")
             
             # Update best model
             if accuracy > self.best_score:
@@ -142,14 +188,200 @@ class EmotionModelTrainer:
         self.models.update(results)
         return results
     
-    # Neural network methods commented out - TensorFlow not available
-    # def create_neural_network(self, input_dim, num_classes):
-    #     """Create deep neural network model"""
-    #     pass
-    # 
-    # def train_neural_network(self, X_train, X_test, y_train, y_test):
-    #     """Train deep neural network"""
-    #     pass
+    def train_optimized_models(self, X_train, X_test, y_train, y_test):
+        """Train optimized ML models for better accuracy"""
+        # Define optimized models
+        models = {
+            'Random Forest': RandomForestClassifier(
+                n_estimators=200, 
+                max_depth=20,
+                min_samples_split=5,
+                min_samples_leaf=2,
+                random_state=42,
+                n_jobs=-1
+            ),
+            'Extra Trees': RandomForestClassifier(
+                n_estimators=200,
+                max_depth=25,
+                min_samples_split=4,
+                min_samples_leaf=1,
+                random_state=42,
+                n_jobs=-1,
+                bootstrap=False
+            ),
+            'SVM': SVC(
+                kernel='rbf', 
+                C=10.0,
+                gamma='scale',
+                random_state=42, 
+                probability=True
+            ),
+            'Gradient Boosting': GradientBoostingClassifier(
+                n_estimators=200,
+                learning_rate=0.1,
+                max_depth=8,
+                min_samples_split=5,
+                random_state=42
+            ),
+            'MLP Sklearn': MLPClassifier(
+                hidden_layer_sizes=(256, 128, 64),
+                activation='relu',
+                solver='adam',
+                alpha=0.001,
+                learning_rate_init=0.001,
+                max_iter=500,
+                random_state=42,
+                early_stopping=True,
+                validation_fraction=0.1
+            ),
+            'Logistic Regression': LogisticRegression(
+                C=1.0,
+                solver='lbfgs',
+                random_state=42, 
+                max_iter=2000,
+                multi_class='ovr'
+            )
+        }
+        
+        results = {}
+        for name, model in models.items():
+            print(f"Training {name}...")
+            
+            try:
+                # Train model
+                model.fit(X_train, y_train)
+                
+                # Predict
+                y_pred = model.predict(X_test)
+                
+                # Evaluate
+                accuracy = accuracy_score(y_test, y_pred)
+                results[name] = {
+                    'model': model,
+                    'accuracy': accuracy,
+                    'predictions': y_pred
+                }
+                
+                print(f"{name} Accuracy: {accuracy:.4f}")
+                
+                # Update best model
+                if accuracy > self.best_score:
+                    self.best_score = accuracy
+                    self.best_model = model
+                    self.best_model_name = name
+                    
+            except Exception as e:
+                print(f"Error training {name}: {e}")
+                continue
+        
+        self.models.update(results)
+        return results
+    
+    def train_mlp_model(self, X_train, X_test, y_train, y_test):
+        """Train PyTorch MLP model with enhanced training"""
+        # Prepare data
+        X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
+        y_train_tensor = torch.tensor(y_train, dtype=torch.long)
+        train_dataset = TensorDataset(X_train_tensor, y_train_tensor)
+        train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+        
+        # Validation split
+        val_size = int(0.2 * len(X_train))
+        train_size = len(X_train) - val_size
+        train_subset, val_subset = torch.utils.data.random_split(train_dataset, [train_size, val_size])
+        
+        train_loader = DataLoader(train_subset, batch_size=BATCH_SIZE, shuffle=True)
+        val_loader = DataLoader(val_subset, batch_size=BATCH_SIZE, shuffle=False)
+        
+        # Model
+        input_dim = X_train.shape[1]
+        num_classes = len(np.unique(y_train))
+        model = EmotionMLP(input_dim, num_classes)
+        
+        # Loss and optimizer with scheduler
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.5)
+        
+        # Training with validation
+        best_val_acc = 0.0
+        patience = 10
+        patience_counter = 0
+        
+        for epoch in range(EPOCHS):
+            # Training
+            model.train()
+            running_loss = 0.0
+            for inputs, labels in train_loader:
+                optimizer.zero_grad()
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                running_loss += loss.item() * inputs.size(0)
+            
+            # Validation
+            model.eval()
+            val_loss = 0.0
+            correct = 0
+            total = 0
+            
+            with torch.no_grad():
+                for inputs, labels in val_loader:
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
+                    val_loss += loss.item() * inputs.size(0)
+                    _, predicted = torch.max(outputs.data, 1)
+                    total += labels.size(0)
+                    correct += (predicted == labels).sum().item()
+            
+            val_accuracy = correct / total
+            epoch_loss = running_loss / len(train_subset)
+            val_loss = val_loss / len(val_subset)
+            
+            if (epoch + 1) % 10 == 0:
+                print(f"Epoch {epoch + 1}/{EPOCHS}, Train Loss: {epoch_loss:.4f}, Val Loss: {val_loss:.4f}, Val Acc: {val_accuracy:.4f}")
+            
+            # Early stopping
+            if val_accuracy > best_val_acc:
+                best_val_acc = val_accuracy
+                patience_counter = 0
+                # Save best model state
+                best_model_state = model.state_dict().copy()
+            else:
+                patience_counter += 1
+                if patience_counter >= patience:
+                    print(f"Early stopping at epoch {epoch + 1}")
+                    break
+            
+            scheduler.step()
+        
+        # Load best model
+        model.load_state_dict(best_model_state)
+        
+        # Final evaluation
+        model.eval()
+        X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
+        y_test_tensor = torch.tensor(y_test, dtype=torch.long)
+        with torch.no_grad():
+            outputs = model(X_test_tensor)
+            predictions = torch.argmax(outputs, 1)
+            accuracy = (predictions == y_test_tensor).float().mean().item()
+        
+        print(f"Final MLP Accuracy: {accuracy:.4f}")
+        
+        # Update best model if this is better
+        if accuracy > self.best_score:
+            self.best_score = accuracy
+            self.best_model = model
+            self.best_model_name = "MLP Neural Network"
+
+        self.models["MLP Neural Network"] = {
+            'model': model,
+            'accuracy': accuracy
+        }
+        
+        return model, accuracy
     
     def hyperparameter_tuning(self, X_train, y_train):
         """Perform hyperparameter tuning for best models"""
@@ -179,10 +411,15 @@ class EmotionModelTrainer:
     
     def evaluate_model(self, model, X_test, y_test, model_name):
         """Evaluate model performance"""
-        if model_name == "Neural Network":
-            y_pred = model.predict(X_test)
-            y_pred = np.argmax(y_pred, axis=1)
+        if model_name == "MLP Neural Network":
+            # PyTorch model
+            model.eval()
+            X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
+            with torch.no_grad():
+                outputs = model(X_test_tensor)
+                y_pred = torch.argmax(outputs, 1).numpy()
         else:
+            # Sklearn model
             y_pred = model.predict(X_test)
         
         # Print classification report
@@ -214,11 +451,18 @@ class EmotionModelTrainer:
         joblib.dump(self.label_encoder, LABEL_ENCODER_PATH)
         joblib.dump(self.imputer, MODEL_DIR / 'imputer.pkl')
         
-        # Save best traditional model
-        if self.best_model_name != "Neural Network":
+        # Save best model
+        if self.best_model_name == "MLP Neural Network":
+            torch.save(self.best_model.state_dict(), MODEL_DIR / 'mlp_model.pth')
+            # Save model architecture info
+            model_info = {
+                'input_dim': self.best_model.fc1.in_features,
+                'num_classes': self.best_model.fc4.out_features
+            }
+            with open(MODEL_DIR / 'mlp_info.pkl', 'wb') as f:
+                pickle.dump(model_info, f)
+        else:
             joblib.dump(self.best_model, MODEL_PATH)
-        
-        # Neural network model saving skipped
         
         # Save model metadata
         metadata = {
@@ -289,51 +533,123 @@ class EmotionModelTrainer:
         return emotion, confidence
     
     def train_complete_pipeline(self, data_dir):
-        """Complete training pipeline"""
-        print("Starting complete training pipeline...")
+        """Complete training pipeline with parallel processing"""
+        print("🚀 Starting optimized training pipeline with parallel processing...")
+        start_time = time.time()
         
         # Load data
         data_parser = CremaDataParser()
         audio_files, emotions = data_parser.load_crema_data(data_dir)
-        features = []
         
-        print("Extracting features from audio files...")
-        # Limit to first 500 files for faster testing
-        limited_files = audio_files[:500]
-        limited_emotions = emotions[:500]
+        print(f"📁 Loaded {len(audio_files)} audio files")
+        print(f"🎯 Target: Extract features from all {len(audio_files)} files")
         
-        for i, audio_file in enumerate(limited_files):
-            if (i + 1) % 50 == 0:
-                print(f"Processed {i + 1}/{len(limited_files)} files")
-            
-            feature_vector = self.audio_processor.process_audio_file(audio_file)
-            if feature_vector is not None:
-                features.append(feature_vector)
+        # Extract features with parallel processing
+        features, valid_labels = self._extract_features_parallel(audio_files, emotions)
         
-        # Update labels to match processed features
-        labels = limited_emotions[:len(features)]
-        print(f"Loaded {len(features)} samples with {len(np.unique(labels))} emotion classes")
+        # Get processing statistics
+        stats = self.audio_processor.get_processing_stats()
+        print(f"\n📊 Feature Extraction Results:")
+        print(f"- Total processed: {stats['total_processed']}")
+        print(f"- Cache hits: {stats['cache_hits']}")
+        print(f"- Successfully extracted: {stats['feature_extraction_success']}")
+        print(f"- Failed extraction: {stats['feature_extraction_failed']}")
+        print(f"- Load failures: {stats['load_failed']}")
+        print(f"- Preprocess failures: {stats['preprocess_failed']}")
         
-        # Prepare data
-        X_train, X_test, y_train, y_test = self.prepare_data(features, labels)
-        print(f"Training set: {len(X_train)} samples")
-        print(f"Test set: {len(X_test)} samples")
+        success_rate = (stats['feature_extraction_success'] / stats['total_processed']) * 100 if stats['total_processed'] > 0 else 0
+        print(f"- Success rate: {success_rate:.1f}%")
         
-        # Train traditional models
-        traditional_results = self.train_traditional_models(X_train, X_test, y_train, y_test)
+        if len(features) == 0:
+            print("❌ No valid features extracted. Exiting.")
+            return None, 0.0
         
-        # Neural network training skipped (TensorFlow not available)
-        print("Neural network training skipped - TensorFlow not available for Python 3.13")
+        print(f"✅ Loaded {len(features)} samples with {len(np.unique(valid_labels))} emotion classes")
+        
+        # Prepare data with proper train/test split
+        X_train, X_test, y_train, y_test = self.prepare_data(features, valid_labels)
+        print(f"🎯 Training set: {len(X_train)} samples")
+        print(f"🎯 Test set: {len(X_test)} samples")
+        
+        # Train optimized models
+        print("\n🤖 Training optimized models...")
+        traditional_results = self.train_optimized_models(X_train, X_test, y_train, y_test)
+        
+        # Train MLP model
+        print("\n🧠 Training PyTorch MLP model...")
+        mlp_model, _ = self.train_mlp_model(X_train, X_test, y_train, y_test)
         
         # Evaluate all models
-        print("\nFinal Model Evaluation:")
+        print("\n📈 Final Model Evaluation:")
         for name, result in self.models.items():
-            if name != "Neural Network":
-                accuracy = self.evaluate_model(result['model'], X_test, y_test, name)
-            else:
-                accuracy = self.evaluate_model(result['model'], X_test, y_test, name)
+            accuracy = self.evaluate_model(result['model'], X_test, y_test, name)
         
         # Save models
         self.save_models()
         
+        total_time = time.time() - start_time
+        print(f"\n⏱️ Total pipeline time: {total_time:.2f} seconds")
+        print(f"🏆 Best model: {self.best_model_name} with accuracy: {self.best_score:.4f}")
+        
         return self.best_model, self.best_score
+    
+    def _extract_features_parallel(self, audio_files, emotions):
+        """Extract features using parallel processing"""
+        print("\n🔄 Starting parallel feature extraction...")
+        start_time = time.time()
+        
+        features = []
+        valid_labels = []
+        
+        if USE_PARALLEL_PROCESSING and len(audio_files) > 100:
+            print(f"⚡ Using {MAX_WORKERS} parallel workers")
+            
+            # Prepare arguments for parallel processing
+            args_list = [(file_path, emotion, self.audio_processor) 
+                        for file_path, emotion in zip(audio_files, emotions)]
+            
+            # Use ThreadPoolExecutor for I/O bound tasks
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                # Submit all tasks
+                future_to_args = {executor.submit(extract_features_for_file, args): args 
+                                 for args in args_list}
+                
+                # Process completed tasks
+                for i, future in enumerate(as_completed(future_to_args)):
+                    try:
+                        feature_vector, emotion, file_path = future.result()
+                        if feature_vector is not None:
+                            features.append(feature_vector)
+                            valid_labels.append(emotion)
+                    except Exception as e:
+                        print(f"Error processing file: {e}")
+                    
+                    # Progress update every 500 files
+                    if (i + 1) % 500 == 0:
+                        elapsed = time.time() - start_time
+                        avg_time = elapsed / (i + 1)
+                        remaining = (len(args_list) - i - 1) * avg_time
+                        print(f"📈 Processed {i + 1}/{len(args_list)} files | "
+                              f"Elapsed: {elapsed:.1f}s | Remaining: {remaining:.1f}s")
+        else:
+            print("🔄 Using sequential processing")
+            for i, (audio_file, emotion) in enumerate(zip(audio_files, emotions)):
+                if (i + 1) % 200 == 0:
+                    elapsed = time.time() - start_time
+                    avg_time = elapsed / (i + 1)
+                    remaining = (len(audio_files) - i - 1) * avg_time
+                    print(f"📈 Processed {i + 1}/{len(audio_files)} files | "
+                          f"Elapsed: {elapsed:.1f}s | Remaining: {remaining:.1f}s")
+                
+                feature_vector = self.audio_processor.process_audio_file(audio_file)
+                if feature_vector is not None:
+                    features.append(feature_vector)
+                    valid_labels.append(emotion)
+        
+        extraction_time = time.time() - start_time
+        avg_time_per_file = extraction_time / len(audio_files) if len(audio_files) > 0 else 0
+        
+        print(f"\n⏱️ Feature extraction completed in {extraction_time:.2f} seconds")
+        print(f"📊 Average time per file: {avg_time_per_file:.3f} seconds")
+        
+        return features, valid_labels

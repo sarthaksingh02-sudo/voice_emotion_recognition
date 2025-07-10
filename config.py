@@ -27,16 +27,24 @@ EMOTION_LABELS = {
 }
 
 # Audio processing parameters
-SAMPLE_RATE = 22050
+SAMPLE_RATE = 16000  # Reduced from 22050 for faster processing
 FRAME_SIZE = 2048
 HOP_SIZE = 512
 N_MFCC = 13
 N_MELS = 128
-MAX_AUDIO_LENGTH = 30  # seconds
+MAX_AUDIO_LENGTH = 10  # Reduce from 30 to 10 seconds for speed
+
+# Feature extraction optimization
+ENABLE_PITCH_FEATURES = False  # Disable for speed
+ENABLE_MEL_FEATURES = False    # Disable for speed
+USE_PARALLEL_PROCESSING = True
+MAX_WORKERS = 6  # Increase parallel workers
+CACHE_FEATURES = True  # Enable feature caching
+USE_FEATURE_SELECTION = True  # Enable feature selection
 
 # Model parameters
-BATCH_SIZE = 32
-EPOCHS = 50
+BATCH_SIZE = 64
+EPOCHS = 100
 LEARNING_RATE = 0.001
 TEST_SIZE = 0.2
 VALIDATION_SIZE = 0.1
