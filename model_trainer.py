@@ -493,9 +493,16 @@ class EmotionModelTrainer:
             self.best_score = metadata['best_score']
             
             # Load appropriate model
-            if self.best_model_name == "Neural Network":
-                print("Neural Network model loading not supported")
-                return False
+            if self.best_model_name == "MLP Neural Network":
+                # Load PyTorch model
+                with open(MODEL_DIR / 'mlp_info.pkl', 'rb') as f:
+                    model_info = pickle.load(f)
+                
+                # Recreate model architecture
+                model = EmotionMLP(model_info['input_dim'], model_info['num_classes'])
+                model.load_state_dict(torch.load(MODEL_DIR / 'mlp_model.pth'))
+                model.eval()
+                self.best_model = model
             else:
                 self.best_model = joblib.load(MODEL_PATH)
             
@@ -518,10 +525,15 @@ class EmotionModelTrainer:
         features_scaled = self.scaler.transform(features_imputed)
         
         # Predict
-        if self.best_model_name == "Neural Network":
-            predictions = self.best_model.predict(features_scaled)
-            predicted_class = np.argmax(predictions, axis=1)[0]
-            confidence = np.max(predictions, axis=1)[0]
+        if self.best_model_name == "MLP Neural Network":
+            # PyTorch model prediction
+            self.best_model.eval()
+            features_tensor = torch.tensor(features_scaled, dtype=torch.float32)
+            with torch.no_grad():
+                outputs = self.best_model(features_tensor)
+                probabilities = torch.softmax(outputs, dim=1)
+                predicted_class = torch.argmax(probabilities, dim=1).item()
+                confidence = torch.max(probabilities, dim=1)[0].item()
         else:
             predicted_class = self.best_model.predict(features_scaled)[0]
             probabilities = self.best_model.predict_proba(features_scaled)[0]

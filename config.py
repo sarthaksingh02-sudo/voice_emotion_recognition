@@ -35,8 +35,8 @@ N_MELS = 128
 MAX_AUDIO_LENGTH = 10  # Reduce from 30 to 10 seconds for speed
 
 # Feature extraction optimization
-ENABLE_PITCH_FEATURES = False  # Disable for speed
-ENABLE_MEL_FEATURES = False    # Disable for speed
+ENABLE_PITCH_FEATURES = True   # Enable for accuracy
+ENABLE_MEL_FEATURES = True     # Enable for accuracy
 USE_PARALLEL_PROCESSING = True
 MAX_WORKERS = 6  # Increase parallel workers
 CACHE_FEATURES = True  # Enable feature caching
