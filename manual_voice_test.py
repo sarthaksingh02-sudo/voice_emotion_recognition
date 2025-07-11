@@ -4,15 +4,27 @@ Manual Voice Testing Script for Emotion Recognition System
 Record your voice and test emotion recognition in real-time
 """
 
-import numpy as np
-import joblib
-import pyaudio
-import wave
-import time
+import sys
 import os
+import time
 import threading
 from datetime import datetime
-from audio_processor import AudioProcessor
+
+try:
+    import numpy as np
+    import joblib
+    import pyaudio
+    import wave
+except ImportError as e:
+    print(f"❌ Required package missing: {e.name}. Please install it using 'pip install {e.name}' and try again.")
+    sys.exit(1)
+
+# Check for audio_processor.py and AudioProcessor
+try:
+    from audio_processor import AudioProcessor
+except ImportError:
+    print("❌ 'audio_processor.py' or 'AudioProcessor' class not found. Please ensure it exists in the project directory.")
+    sys.exit(1)
 
 class VoiceEmotionTester:
     def __init__(self):
@@ -33,14 +45,21 @@ class VoiceEmotionTester:
         
     def load_models(self):
         """Load the trained models"""
+        model_dir = 'models'
+        required_files = ['emotion_model.pkl', 'scaler.pkl', 'label_encoder.pkl']
+        for f in required_files:
+            if not os.path.exists(os.path.join(model_dir, f)):
+                print(f"❌ Required model file missing: {model_dir}/{f}")
+                print("   Please train your model or place the file in the correct directory.")
+                sys.exit(1)
         try:
-            self.model = joblib.load('models/emotion_model.pkl')
-            self.scaler = joblib.load('models/scaler.pkl')
-            self.label_encoder = joblib.load('models/label_encoder.pkl')
+            self.model = joblib.load(os.path.join(model_dir, 'emotion_model.pkl'))
+            self.scaler = joblib.load(os.path.join(model_dir, 'scaler.pkl'))
+            self.label_encoder = joblib.load(os.path.join(model_dir, 'label_encoder.pkl'))
             print("✅ Models loaded successfully!")
         except Exception as e:
             print(f"❌ Error loading models: {e}")
-            raise
+            sys.exit(1)
 
     def setup_audio(self):
         """Setup audio recording parameters"""
@@ -49,44 +68,57 @@ class VoiceEmotionTester:
         self.CHANNELS = 1
         self.RATE = 22050
         self.RECORD_SECONDS = 3  # Record for 3 seconds
+        # Check if output directory is writable
+        if not os.access('.', os.W_OK):
+            print("❌ Cannot write to current directory. Check your permissions.")
+            sys.exit(1)
         
     def record_voice(self, filename):
         """Record voice from microphone"""
         try:
             audio = pyaudio.PyAudio()
-            
-            # Start recording
-            stream = audio.open(format=self.FORMAT,
-                              channels=self.CHANNELS,
-                              rate=self.RATE,
-                              input=True,
-                              frames_per_buffer=self.CHUNK)
-            
+            # Check for available input devices
+            if audio.get_device_count() == 0:
+                print("❌ No audio input devices found. Please connect a microphone.")
+                return False
+            try:
+                stream = audio.open(format=self.FORMAT,
+                                    channels=self.CHANNELS,
+                                    rate=self.RATE,
+                                    input=True,
+                                    frames_per_buffer=self.CHUNK)
+            except Exception as e:
+                print(f"❌ Could not open audio stream: {e}")
+                audio.terminate()
+                return False
             print(f"🎤 Recording for {self.RECORD_SECONDS} seconds...")
             print("   Say something with emotion!")
-            
             frames = []
             for i in range(0, int(self.RATE / self.CHUNK * self.RECORD_SECONDS)):
-                data = stream.read(self.CHUNK)
+                try:
+                    data = stream.read(self.CHUNK)
+                except Exception as e:
+                    print(f"❌ Error while recording: {e}")
+                    stream.stop_stream()
+                    stream.close()
+                    audio.terminate()
+                    return False
                 frames.append(data)
-            
             print("🔴 Recording finished!")
-            
-            # Stop recording
             stream.stop_stream()
             stream.close()
             audio.terminate()
-            
-            # Save the recording
-            wf = wave.open(filename, 'wb')
-            wf.setnchannels(self.CHANNELS)
-            wf.setsampwidth(audio.get_sample_size(self.FORMAT))
-            wf.setframerate(self.RATE)
-            wf.writeframes(b''.join(frames))
-            wf.close()
-            
+            try:
+                wf = wave.open(filename, 'wb')
+                wf.setnchannels(self.CHANNELS)
+                wf.setsampwidth(audio.get_sample_size(self.FORMAT))
+                wf.setframerate(self.RATE)
+                wf.writeframes(b''.join(frames))
+                wf.close()
+            except Exception as e:
+                print(f"❌ Could not save recording: {e}")
+                return False
             return True
-            
         except Exception as e:
             print(f"❌ Recording error: {e}")
             return False
@@ -320,3 +352,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

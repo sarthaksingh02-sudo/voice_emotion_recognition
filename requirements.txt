@@ -12,6 +12,8 @@ soundfile==0.12.1
 pyaudio==0.2.11
 webrtcvad==2.0.10
 scipy==1.11.1
+noisereduce==3.0.0
+sounddevice==0.4.6
 
 # Feature extraction
 python_speech_features==0.6
@@ -27,13 +29,67 @@ flask-cors==4.0.0
 fastapi==0.103.1
 uvicorn==0.23.2
 websockets==11.0.3
+multipart==0.0.6
+python-multipart==0.0.6
 
 # Visualization
 matplotlib==3.7.2
 seaborn==0.12.2
 plotly==5.15.0
+dash==2.14.1
+dash-bootstrap-components==1.5.0
+
+# GUI Development
+PyQt5==5.15.10
+tkinter-tooltip==2.1.0
+Pillow==10.0.0
+
+# Transformer Models
+transformers==4.35.0
+datasets==2.14.5
+torch-audio==0.13.1
+accelerate==0.24.1
+
+# Database
+sqlite3
 
 # Utilities
 tqdm==4.65.0
 python-dotenv==1.0.0
 pydantic==2.3.0
+typing-extensions==4.8.0
+threading-timer==0.1.0
+queue-manager==1.0.0
+psutil==5.9.5
+watchdog==3.0.0
+
+# Development & Testing
+pytest==7.4.2
+pytest-cov==4.1.0
+pytest-mock==3.11.1
+black==23.9.1
+flake8==6.1.0
+mypy==1.6.1
+
+# Logging & Monitoring
+loguru==0.7.2
+rich==13.6.0
+colorama==0.4.6
+
+# Audio Enhancement
+spectralpy==0.1.0
+noisereduce==3.0.0
+audiosegment==0.23.0
+
+# Model Optimization
+optuna==3.4.0
+hyperopt==0.2.7
+scikit-optimize==0.9.0
+
+# Async Support
+aiofiles==23.2.1
+asyncio-throttle==1.0.2
+
+# Version 1.1 Specific
+emotion-recognition-gui==1.1.0
+real-time-audio-viz==1.0.0

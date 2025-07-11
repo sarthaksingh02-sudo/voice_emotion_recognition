@@ -1,18 +1,38 @@
 """
-Configuration file for Emotion Recognition System
+Configuration file for Emotion Recognition System v1.1
+Comprehensive settings for GUI, API, Real-time processing, and Advanced features
 """
 import os
 from pathlib import Path
+from typing import Dict, List, Tuple, Optional
 
-# Base paths
+# ================================
+# VERSION INFORMATION
+# ================================
+VERSION = "1.1.0"
+VERSION_NAME = "Advanced Emotion Recognition System"
+RELEASE_DATE = "2025-07-11"
+AUTHOR = "Sarthak Singh"
+
+# ================================
+# BASE PATHS
+# ================================
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
 MODEL_DIR = BASE_DIR / "models"
 TEMP_DIR = BASE_DIR / "temp"
 LOGS_DIR = BASE_DIR / "logs"
+CACHE_DIR = BASE_DIR / "cache"
+DATABASE_DIR = BASE_DIR / "database"
+GUI_ASSETS_DIR = BASE_DIR / "gui_assets"
+API_UPLOADS_DIR = BASE_DIR / "api_uploads"
+REPORTS_DIR = BASE_DIR / "reports"
+VISUALIZATIONS_DIR = BASE_DIR / "visualizations"
 
 # Create directories if they don't exist
-for directory in [DATA_DIR, MODEL_DIR, TEMP_DIR, LOGS_DIR]:
+for directory in [DATA_DIR, MODEL_DIR, TEMP_DIR, LOGS_DIR, CACHE_DIR, 
+                 DATABASE_DIR, GUI_ASSETS_DIR, API_UPLOADS_DIR, 
+                 REPORTS_DIR, VISUALIZATIONS_DIR]:
     directory.mkdir(exist_ok=True)
 
 # Emotion labels
