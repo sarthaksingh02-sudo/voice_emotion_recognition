@@ -26,7 +26,7 @@ def test_optimized_pipeline():
     
     # Initialize trainer
     trainer = EmotionModelTrainer()
-    data_dir = Path("data/AudioWAV")
+    data_dir = Path("data")
     
     if not data_dir.exists():
         print(f"❌ Data directory not found: {data_dir}")
@@ -67,10 +67,10 @@ def test_optimized_pipeline():
                 else:
                     print(f"  ❌ Speed target (≤0.2s): {avg_time_per_file:.3f}s")
                 
-                if best_score >= 0.65:
-                    print(f"  ✅ Accuracy target (≥65%): {best_score*100:.1f}%")
+                if best_score >= 0.85:
+                    print(f"  ✅ Accuracy target (≥85%): {best_score*100:.1f}%")
                 else:
-                    print(f"  ❌ Accuracy target (≥65%): {best_score*100:.1f}%")
+                    print(f"  ❌ Accuracy target (≥85%): {best_score*100:.1f}%")
             
             return True
         else:

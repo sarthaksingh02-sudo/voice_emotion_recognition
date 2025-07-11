@@ -1,13 +1,13 @@
 """
-Training script for emotion recognition model using CREMA-D dataset
+Training script for emotion recognition model using RAVDESS dataset
 """
 from model_trainer import EmotionModelTrainer
-from data_parser import CremaDataParser
+from ravdess_parser import RavdessDataParser
 import numpy as np
 
 def main():
     print("=== Voice Emotion Recognition Training ===")
-    print("Using CREMA-D dataset")
+    print("Using RAVDESS dataset only")
     
     # Initialize trainer
     trainer = EmotionModelTrainer()
@@ -18,8 +18,8 @@ def main():
     try:
         # First test the data parser
         print("\n1. Testing data parser...")
-        parser = CremaDataParser()
-        audio_files, emotions = parser.load_crema_data(data_dir)
+        parser = RavdessDataParser()
+        audio_files, emotions = parser.load_ravdess_data(data_dir)
         
         if len(audio_files) == 0:
             print("No audio files found! Please check the data directory.")

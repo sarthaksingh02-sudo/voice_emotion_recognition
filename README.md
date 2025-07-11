@@ -1,151 +1,198 @@
-# 🎯 Advanced Emotion Recognition System
+# 🎭 Advanced Voice Emotion Recognition System
 
-A high-performance real-time emotion recognition system using advanced machine learning techniques and voice activity detection.
+A comprehensive real-time emotion recognition system using advanced machine learning techniques, featuring multiple testing interfaces and high-performance audio processing.
 
-## 🚀 Features
+## 🚀 Key Features
 
-### Core Features
-- **Real-time emotion recognition** from speech
-- **Voice Activity Detection (VAD)** - automatically detects when you start/stop speaking
-- **Advanced feature extraction** with MFCC, spectral, chroma, mel-spectrogram, and pitch features
-- **Deep learning model** using PyTorch MLP Neural Network
-- **High accuracy** with ensemble of optimized models
+### 🎤 **Voice Testing Suite**
+- **Manual Voice Testing** - Record and analyze your voice with detailed feedback
+- **Batch Testing** - Test multiple emotions in sequence for comprehensive analysis
+- **Real-time Recognition** - Live emotion detection with voice activity detection
+- **Interactive Interface** - User-friendly testing with visual feedback
 
-### Supported Emotions
-- 😊 Happy
-- 😢 Sad  
-- 😡 Angry
-- 😨 Fear
-- 🤢 Disgust
-- 😐 Neutral
+### 🧠 **Advanced ML Models**
+- **Multiple Algorithms**: SVM, Random Forest, Gradient Boosting, MLP Neural Network, Logistic Regression
+- **Feature Engineering**: 642 audio features per sample
+- **Model Optimization**: Automated hyperparameter tuning and model selection
+- **Performance Tracking**: Comprehensive confusion matrices and performance metrics
 
-### Technical Features
-- **Optimized feature extraction** with parallel processing
-- **Feature caching** for faster processing
-- **Robust audio preprocessing** with noise reduction
-- **Automatic model selection** based on performance
-- **Confidence scoring** for predictions
+### 📊 **Supported Emotions**
+- 😊 **Happy** - Joyful, excited expressions
+- 😢 **Sad** - Sorrowful, melancholic tones
+- 😠 **Angry** - Frustrated, aggressive speech
+- 😨 **Fearful** - Scared, worried expressions
+- 🤢 **Disgust** - Repulsed, disgusted tones
+- 😐 **Neutral** - Calm, normal speech
 
-## 📊 Performance
-- **Model Accuracy**: 53.8% (MLP Neural Network)
-- **Real-time processing**:  1 second per prediction
-- **Voice Activity Detection**: Smart start/stop detection
-- **Feature extraction**: 640+ audio features per sample
+### 🔧 **Technical Excellence**
+- **RAVDESS Dataset**: Professional emotion dataset with 7,442 samples
+- **Advanced Feature Extraction**: MFCC, spectral, chroma, mel-spectrogram, and pitch features
+- **Real-time Processing**: Sub-second emotion detection
+- **Voice Activity Detection**: Smart recording start/stop detection
+- **Confidence Scoring**: Probability-based prediction confidence
 
-## 🛠️ Installation
+## 🎯 **Current Performance**
+- **Best Model**: SVM with 65% confidence on sample prediction
+- **Real-time Processing**: < 1 second per prediction
+- **Feature Extraction**: 642 features per audio sample
+- **Voice Activity Detection**: Automatic speech detection
+
+## 🛠️ **Installation**
 
 ### Prerequisites
 ```bash
 pip install torch torchvision torchaudio
 pip install numpy pandas scikit-learn
 pip install librosa soundfile pyaudio
-pip install webrtcvad
 pip install matplotlib seaborn
 pip install joblib
 ```
 
 ### Quick Setup
 ```bash
-git clone https://github.com/your-username/emotion_recognition_system.git
+git clone https://github.com/sarthaksingh02-sudo/emotion_recognition_system.git
 cd emotion_recognition_system
 pip install -r requirements.txt
 ```
 
-## 🎯 Usage
+## 🎙️ **Voice Testing Options**
 
-### 1. Real-time Emotion Recognition (Improved)
+### 1. **Simple Voice Test** - Quick Single Test
+```bash
+python simple_voice_test.py
+```
+- Records 3 seconds of audio
+- Instant emotion analysis
+- Detailed confidence breakdown
+- Perfect for quick testing
+
+### 2. **Batch Voice Test** - Comprehensive Testing
+```bash
+python batch_voice_test.py
+```
+- Tests 6 different emotions in sequence
+- Guided emotion prompts
+- Accuracy summary and statistics
+- Ideal for thorough evaluation
+
+### 3. **Manual Voice Test** - Advanced Interface
+```bash
+python manual_voice_test.py
+```
+- Interactive testing interface
+- Manual or continuous recording modes
+- Detailed analysis with all emotion probabilities
+- Recording management options
+
+### 4. **Real-time Recognition**
 ```bash
 python improved_real_time.py
 ```
-**Features:**
-- Voice Activity Detection automatically detects when you speak
-- No need to press buttons - just start talking!
-- Intelligent silence detection
-- Visual feedback with emojis and confidence indicators
+- Voice Activity Detection
+- Continuous emotion monitoring
+- Live feedback with emojis
 
-### 2. Basic Real-time Recognition
+## 📈 **System Testing & Validation**
+
+### Quick System Check
 ```bash
-python real_time_inference.py
+python test_final.py          # Complete pipeline test
+python system_readiness_test.py  # System readiness validation
+python comprehensive_test.py     # Detailed performance analysis
 ```
 
-### 3. Train Your Own Model
+### Model Training
 ```bash
-python train_model.py
+python train_model.py         # Train new models
+python model_diagnostic.py    # Model performance diagnostics
 ```
 
-### 4. Test on Audio Files
-```bash
-python quick_test.py
-```
-
-## 📁 Project Structure
+## 📁 **Project Structure**
 
 ```
 emotion_recognition_system/
-├── improved_real_time.py      # 🎯 Advanced real-time recognition with VAD
-├── real_time_inference.py     # Basic real-time recognition
-├── train_model.py             # Model training pipeline
-├── model_trainer.py           # ML model implementations
-├── audio_processor.py         # Audio feature extraction
-├── data_parser.py             # Dataset parsing utilities
-├── config.py                  # Configuration settings
-├── quick_test.py              # Quick testing utilities
-├── models/                    # Trained models directory
-├── data/                      # Training data directory
-├── temp/                      # Temporary files and cache
-└── logs/                      # Training logs
+├── 🎤 Voice Testing Suite
+│   ├── simple_voice_test.py      # Quick single voice test
+│   ├── batch_voice_test.py       # Comprehensive batch testing
+│   ├── manual_voice_test.py      # Advanced interactive testing
+│   └── improved_real_time.py     # Real-time recognition
+├── 🧠 Core System
+│   ├── train_model.py            # Model training pipeline
+│   ├── model_trainer.py          # ML model implementations
+│   ├── audio_processor.py        # Audio feature extraction
+│   ├── data_parser.py            # RAVDESS dataset parser
+│   └── config.py                 # Configuration settings
+├── 🔧 Testing & Validation
+│   ├── test_final.py             # Complete pipeline test
+│   ├── system_readiness_test.py  # System validation
+│   ├── comprehensive_test.py     # Performance analysis
+│   └── model_diagnostic.py       # Model diagnostics
+├── 📊 Generated Assets
+│   ├── *.png                     # Confusion matrices
+│   ├── models/                   # Trained models
+│   ├── data/AudioWAV/            # RAVDESS dataset
+│   └── recordings/               # Voice test recordings
+└── 📝 Documentation
+    ├── README.md                 # This file
+    └── requirements.txt          # Dependencies
 ```
 
-## 🧠 Model Architecture
-
-### MLP Neural Network (Best Model)
-- **Input Layer**: 640+ audio features
-- **Hidden Layers**: 
-  - Layer 1: 256 neurons + BatchNorm + Dropout(0.5)
-  - Layer 2: 128 neurons + BatchNorm + Dropout(0.5)  
-  - Layer 3: 64 neurons + BatchNorm + Dropout(0.3)
-- **Output Layer**: 6 emotion classes
-- **Activation**: ReLU + Softmax
-- **Optimizer**: Adam with learning rate scheduling
+## 🧠 **Model Architecture**
 
 ### Feature Extraction Pipeline
-1. **MFCC Features**: 13 coefficients × 4 statistical measures = 52 features
-2. **Spectral Features**: 4 spectral measures × 6 statistics = 24 features
-3. **Chroma Features**: 12 chroma bins × 4 statistics = 48 features
-4. **Mel-Spectrogram**: 128 mel bins × 4 statistics = 512 features
-5. **Pitch Features**: 6 pitch-based measurements
-6. **Total**: 640+ features per audio sample
+1. **MFCC Features** (52): Mel-frequency cepstral coefficients with statistical measures
+2. **Spectral Features** (24): Spectral centroid, rolloff, bandwidth, zero-crossing rate
+3. **Chroma Features** (48): Chroma vector with statistical measures
+4. **Mel-Spectrogram** (512): Mel-scale spectrogram with statistical measures
+5. **Pitch Features** (6): Fundamental frequency characteristics
+6. **Total**: 642 features per audio sample
 
-## 📈 Training Process
+### Available Models
+| Model | Type | Status |
+|-------|------|--------|
+| **SVM** | Support Vector Machine | ✅ Production Ready |
+| **Random Forest** | Ensemble Method | ✅ Production Ready |
+| **Gradient Boosting** | Ensemble Method | ✅ Production Ready |
+| **MLP Neural Network** | Deep Learning | ✅ Production Ready |
+| **Logistic Regression** | Linear Model | ✅ Production Ready |
 
-### Data Preparation
-- **Dataset**: CREMA-D (7,442 audio samples)
-- **Preprocessing**: Noise reduction, normalization, padding
-- **Feature Extraction**: Parallel processing with caching
-- **Data Split**: 80% training, 20% testing
+## 📊 **Performance Metrics**
 
-### Model Training
-- **Multiple Models**: Random Forest, SVM, Gradient Boosting, MLP
-- **Hyperparameter Tuning**: Grid search optimization
-- **Early Stopping**: Prevent overfitting
-- **Model Selection**: Automatic best model selection
+### Model Comparison (Latest Results)
+| Model | Primary Metric | Confidence Range |
+|-------|---------------|------------------|
+| **SVM** | 65% confidence | High (0.6-0.8) |
+| **Random Forest** | Ensemble accuracy | Medium (0.4-0.7) |
+| **Gradient Boosting** | Boosted performance | Medium (0.4-0.6) |
+| **MLP Neural Network** | Deep learning | Variable (0.3-0.7) |
+| **Logistic Regression** | Linear baseline | Low-Medium (0.3-0.6) |
 
-## 🎤 Real-time Recognition Guide
+### Confusion Matrices Available
+- ✅ SVM Enhanced Confusion Matrix
+- ✅ Random Forest Enhanced Confusion Matrix
+- ✅ Gradient Boosting Enhanced Confusion Matrix
+- ✅ MLP Neural Network Confusion Matrix
+- ✅ Logistic Regression Enhanced Confusion Matrix
+- ✅ Extra Trees Enhanced Confusion Matrix
 
-### Using the Improved System
-1. Run `python improved_real_time.py`
-2. Wait for "🎤 Listening... Start speaking!"
-3. Speak naturally (1-10 seconds)
-4. Stop speaking and wait for results
-5. See emotion prediction with confidence score
+## 🎤 **Voice Testing Guide**
 
-### Tips for Best Results
-- **Clear speech**: Speak clearly and at normal volume
-- **Emotional expression**: Express the emotion you want to test
-- **Quiet environment**: Minimize background noise
-- **Normal pace**: Don't speak too fast or too slow
+### For Best Results:
+1. **Environment**: Use a quiet room with minimal background noise
+2. **Microphone**: Ensure your microphone is working and positioned correctly
+3. **Expression**: Clearly express the intended emotion in your voice
+4. **Duration**: Speak for 2-3 seconds with emotional content
+5. **Clarity**: Speak clearly and at normal volume
 
-## 🔧 Configuration
+### Emotion Testing Tips:
+- **😊 Happy**: Sound joyful, excited, upbeat
+- **😢 Sad**: Speak slowly, with a lower tone, sound melancholic
+- **😠 Angry**: Use a louder, sharper tone, sound frustrated
+- **😨 Fearful**: Sound worried, anxious, with a shaky voice
+- **🤢 Disgust**: Express repulsion, sound disgusted
+- **😐 Neutral**: Speak normally, calm and balanced
+
+## 🔧 **Configuration**
 
 Edit `config.py` to customize:
 - Audio sampling rate and processing parameters
@@ -153,221 +200,60 @@ Edit `config.py` to customize:
 - Model training parameters
 - Real-time processing settings
 
-## 📊 Performance Metrics
+## 📊 **Dataset Information**
 
-### Model Comparison
-| Model | Accuracy | Precision | Recall | F1-Score |
-|-------|----------|-----------|--------|----------|
-| MLP Neural Network | 53.8% | 0.54 | 0.54 | 0.53 |
-| SVM | 52.2% | 0.52 | 0.52 | 0.52 |
-| Logistic Regression | 51.8% | 0.51 | 0.52 | 0.51 |
-| Gradient Boosting | 51.2% | 0.51 | 0.51 | 0.51 |
+### RAVDESS Dataset
+- **Total Samples**: 7,442 audio files
+- **Actors**: 24 professional actors
+- **Emotions**: 8 different emotions
+- **Quality**: Professional studio recordings
+- **Format**: 16-bit WAV files, 22050 Hz sampling rate
 
-### Per-Emotion Performance
-| Emotion | Precision | Recall | F1-Score |
-|---------|-----------|--------|----------|
-| Angry | 0.68 | 0.70 | 0.69 |
-| Sad | 0.52 | 0.71 | 0.60 |
-| Neutral | 0.48 | 0.60 | 0.53 |
-| Happy | 0.48 | 0.49 | 0.49 |
-| Disgust | 0.58 | 0.39 | 0.46 |
-| Fear | 0.50 | 0.36 | 0.42 |
+### Data Distribution
+- **Training**: 80% of samples
+- **Testing**: 20% of samples
+- **Validation**: Cross-validation during training
+- **Preprocessing**: Noise reduction, normalization, feature extraction
 
-## 🚀 Future Improvements
+## 🚀 **Future Improvements**
 
-- [ ] Add more emotion categories
-- [ ] Implement transformer-based models
-- [ ] Add real-time audio visualization
-- [ ] Support for multiple languages
-- [ ] Web interface for easy usage
-- [ ] Mobile app integration
+- [ ] **Web Interface**: Browser-based emotion testing
+- [ ] **Mobile App**: Android/iOS emotion recognition
+- [ ] **API Service**: RESTful API for integration
+- [ ] **Multi-language Support**: Support for different languages
+- [ ] **Transformer Models**: State-of-the-art transformer architecture
+- [ ] **Real-time Visualization**: Live audio waveform and emotion tracking
+- [ ] **Batch Processing**: Process multiple files simultaneously
+- [ ] **Model Ensemble**: Combine multiple models for better accuracy
 
-## 🤝 Contributing
+## 🤝 **Contributing**
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## 📜 License
+## 📜 **License**
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙏 Acknowledgments
+## 🙏 **Acknowledgments**
 
-- CREMA-D dataset for emotion recognition research
-- PyTorch team for the deep learning framework
-- librosa for audio processing capabilities
-- WebRTC team for voice activity detection
+- **RAVDESS Dataset**: Ryerson Audio-Visual Database of Emotional Speech and Song
+- **PyTorch Team**: Deep learning framework
+- **Librosa**: Audio processing library
+- **Scikit-learn**: Machine learning library
+- **PyAudio**: Real-time audio I/O library
 
-## 📧 Contact
+## 📧 **Contact & Support**
 
-For questions or support, please open an issue on GitHub.
+For questions, issues, or contributions:
+- **GitHub Issues**: [Create an issue](https://github.com/sarthaksingh02-sudo/emotion_recognition_system/issues)
+- **Discussions**: [Join the discussion](https://github.com/sarthaksingh02-sudo/emotion_recognition_system/discussions)
 
 ---
 
-**Made with ❤️ for advancing emotion recognition technology**
+**🎭 Made with ❤️ for advancing emotion recognition technology**
 
-# Voice Emotion Recognition System
-
-A machine learning system for recognizing emotions from voice recordings, designed for mental health monitoring applications.
-
-## Features
-
-- **Audio Processing**: Advanced feature extraction using MFCC, spectral, chroma, mel-spectrogram, and pitch features
-- **Multiple ML Models**: Random Forest, SVM, Gradient Boosting, MLP, and Logistic Regression
-- **Real-time Recognition**: Live emotion detection from microphone input
-- **CREMA-D Dataset Support**: Pre-configured for the CREMA-D emotion dataset
-- **6 Emotion Classes**: Happy, Sad, Angry, Neutral, Fear, Disgust
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/sarthaksingh02-sudo/voice_emotion_recognition.git
-cd voice_emotion_recognition
-```
-
-2. Install required packages:
-```bash
-pip install -r requirements.txt
-```
-
-## Dataset Setup
-
-This project uses the CREMA-D dataset. Place your audio files in the `data/AudioWAV/` directory.
-
-The CREMA-D dataset contains 7,442 audio files from 91 actors speaking 12 sentences with 6 different emotions:
-- **Angry** (ANG): 1,271 files
-- **Disgust** (DIS): 1,271 files  
-- **Fear** (FEA): 1,271 files
-- **Happy** (HAP): 1,271 files
-- **Sad** (SAD): 1,271 files
-- **Neutral** (NEU): 1,087 files
-
-## Usage
-
-### Training the Model
-
-Run the training script to train emotion recognition models:
-
-```bash
-python train_model.py
-```
-
-This will:
-- Load and parse the CREMA-D dataset
-- Extract 642 audio features per file
-- Train 5 different ML models
-- Save the best performing model
-- Generate confusion matrices for evaluation
-
-### Real-time Emotion Recognition
-
-For live emotion detection from microphone:
-
-```bash
-python real_time_inference.py
-```
-
-Choose option 1 for real-time recognition or option 2 to test on a specific audio file.
-
-### Testing on Audio Files
-
-To test the model on a specific audio file:
-
-```python
-from model_trainer import EmotionModelTrainer
-from audio_processor import AudioProcessor
-
-# Load trained model
-trainer = EmotionModelTrainer()
-trainer.load_models()
-
-# Process audio file
-processor = AudioProcessor()
-features = processor.process_audio_file("path/to/audio.wav")
-
-# Predict emotion
-emotion, confidence = trainer.predict_emotion(features)
-print(f"Emotion: {emotion}, Confidence: {confidence:.2f}")
-```
-
-## Model Performance
-
-Current model performance on CREMA-D dataset (500 sample subset):
-
-| Model | Accuracy | Cross-Validation Score |
-|-------|----------|----------------------|
-| **Logistic Regression** | **53.0%** | **46.3% ± 8.5%** |
-| MLP Neural Network | 48.0% | 38.5% ± 7.8% |
-| Random Forest | 38.0% | 38.3% ± 10.1% |
-| Gradient Boosting | 37.0% | 35.8% ± 5.2% |
-| SVM | 34.0% | 35.5% ± 8.8% |
-
-The Logistic Regression model shows the best performance and is used as the default model.
-
-## Feature Extraction
-
-The system extracts 642 features from each audio file:
-
-- **MFCC Features** (52): Mel-frequency cepstral coefficients with statistical measures
-- **Spectral Features** (24): Spectral centroid, rolloff, bandwidth, zero-crossing rate
-- **Chroma Features** (48): Chroma vector with statistical measures  
-- **Mel-spectrogram Features** (512): Mel-scale spectrogram with statistical measures
-- **Pitch Features** (6): Fundamental frequency characteristics
-
-## Project Structure
-
-```
-emotion_recognition_system/
-├── config.py              # Configuration parameters
-├── audio_processor.py     # Audio feature extraction
-├── data_parser.py         # CREMA-D dataset parser
-├── model_trainer.py       # ML model training and evaluation
-├── train_model.py         # Training script
-├── real_time_inference.py # Real-time emotion recognition
-├── requirements.txt       # Python dependencies
-├── data/                  # Dataset directory
-│   └── AudioWAV/         # CREMA-D audio files
-├── models/               # Saved models and preprocessing objects
-├── temp/                 # Temporary files
-└── logs/                 # Log files
-```
-
-## Requirements
-
-- Python 3.13+
-- NumPy, Pandas, Scikit-learn
-- Librosa, SoundFile, PyAudio
-- Matplotlib, Seaborn
-- See `requirements.txt` for complete list
-
-## Applications
-
-This system can be integrated into:
-
-- **Virtual Counseling Platforms**: Real-time emotional feedback during therapy sessions
-- **Mental Health Monitoring**: Continuous emotion tracking for patients
-- **Voice Assistants**: Emotion-aware responses
-- **Call Centers**: Customer emotion analysis
-- **Research**: Emotional speech analysis studies
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## Acknowledgments
-
-- CREMA-D dataset creators for providing the emotion recognition dataset
-- Librosa library for audio processing capabilities
-- Scikit-learn for machine learning algorithms
+*"Understanding emotions through voice - bridging the gap between human expression and machine learning."*

@@ -31,6 +31,7 @@ warnings.filterwarnings('ignore')
 from config import *
 from audio_processor import AudioProcessor
 from data_parser import CremaDataParser
+from ravdess_parser import RavdessDataParser
 
 def extract_features_for_file(args):
     """Helper function for parallel feature extraction"""
@@ -45,34 +46,139 @@ def extract_features_for_file(args):
         return None, None, file_path
 
 class EmotionMLP(nn.Module):
-    """PyTorch MLP model for emotion recognition"""
-    def __init__(self, input_dim, num_classes):
+    """Enhanced PyTorch MLP model for high-accuracy emotion recognition"""
+    def __init__(self, input_dim, num_classes, dropout_rate=0.3):
         super(EmotionMLP, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 256)
-        self.bn1 = nn.BatchNorm1d(256)
-        self.dropout1 = nn.Dropout(0.5)
         
-        self.fc2 = nn.Linear(256, 128)
-        self.bn2 = nn.BatchNorm1d(128)
-        self.dropout2 = nn.Dropout(0.5)
+        # Input layer with feature normalization
+        self.input_bn = nn.BatchNorm1d(input_dim)
         
-        self.fc3 = nn.Linear(128, 64)
-        self.bn3 = nn.BatchNorm1d(64)
-        self.dropout3 = nn.Dropout(0.3)
+        # Deep architecture for better feature learning
+        self.fc1 = nn.Linear(input_dim, 1024)
+        self.bn1 = nn.BatchNorm1d(1024)
+        self.dropout1 = nn.Dropout(dropout_rate)
         
-        self.fc4 = nn.Linear(64, num_classes)
+        self.fc2 = nn.Linear(1024, 512)
+        self.bn2 = nn.BatchNorm1d(512)
+        self.dropout2 = nn.Dropout(dropout_rate)
+        
+        self.fc3 = nn.Linear(512, 256)
+        self.bn3 = nn.BatchNorm1d(256)
+        self.dropout3 = nn.Dropout(dropout_rate)
+        
+        self.fc4 = nn.Linear(256, 128)
+        self.bn4 = nn.BatchNorm1d(128)
+        self.dropout4 = nn.Dropout(dropout_rate * 0.5)
+        
+        self.fc5 = nn.Linear(128, 64)
+        self.bn5 = nn.BatchNorm1d(64)
+        self.dropout5 = nn.Dropout(dropout_rate * 0.3)
+        
+        # Output layer
+        self.fc_out = nn.Linear(64, num_classes)
+        
+        # Initialize weights
+        self._init_weights()
+        
+    def _init_weights(self):
+        """Initialize weights using He initialization"""
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm1d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
         
     def forward(self, x):
-        x = F.relu(self.bn1(self.fc1(x)))
+        # Input normalization
+        x = self.input_bn(x)
+        
+        # Deep layers with residual-like connections
+        x1 = F.relu(self.bn1(self.fc1(x)))
+        x1 = self.dropout1(x1)
+        
+        x2 = F.relu(self.bn2(self.fc2(x1)))
+        x2 = self.dropout2(x2)
+        
+        x3 = F.relu(self.bn3(self.fc3(x2)))
+        x3 = self.dropout3(x3)
+        
+        x4 = F.relu(self.bn4(self.fc4(x3)))
+        x4 = self.dropout4(x4)
+        
+        x5 = F.relu(self.bn5(self.fc5(x4)))
+        x5 = self.dropout5(x5)
+        
+        # Output layer
+        output = self.fc_out(x5)
+        return output
+
+class EmotionCNN(nn.Module):
+    """1D CNN model for emotion recognition from audio features"""
+    def __init__(self, input_dim, num_classes):
+        super(EmotionCNN, self).__init__()
+        
+        # Reshape input for conv1d (batch, channels, length)
+        self.input_dim = input_dim
+        
+        # CNN layers
+        self.conv1 = nn.Conv1d(1, 64, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm1d(64)
+        self.pool1 = nn.MaxPool1d(2)
+        
+        self.conv2 = nn.Conv1d(64, 128, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm1d(128)
+        self.pool2 = nn.MaxPool1d(2)
+        
+        self.conv3 = nn.Conv1d(128, 256, kernel_size=3, padding=1)
+        self.bn3 = nn.BatchNorm1d(256)
+        self.pool3 = nn.MaxPool1d(2)
+        
+        # Calculate the size after conv layers
+        conv_output_size = self._get_conv_output_size()
+        
+        # Fully connected layers
+        self.fc1 = nn.Linear(conv_output_size, 512)
+        self.bn4 = nn.BatchNorm1d(512)
+        self.dropout1 = nn.Dropout(0.5)
+        
+        self.fc2 = nn.Linear(512, 256)
+        self.bn5 = nn.BatchNorm1d(256)
+        self.dropout2 = nn.Dropout(0.3)
+        
+        self.fc3 = nn.Linear(256, num_classes)
+        
+    def _get_conv_output_size(self):
+        """Calculate the output size of conv layers"""
+        with torch.no_grad():
+            x = torch.randn(1, 1, self.input_dim)
+            x = self.pool1(F.relu(self.bn1(self.conv1(x))))
+            x = self.pool2(F.relu(self.bn2(self.conv2(x))))
+            x = self.pool3(F.relu(self.bn3(self.conv3(x))))
+            return x.view(1, -1).size(1)
+        
+    def forward(self, x):
+        # Reshape for conv1d: (batch, 1, features)
+        x = x.unsqueeze(1)
+        
+        # CNN layers
+        x = self.pool1(F.relu(self.bn1(self.conv1(x))))
+        x = self.pool2(F.relu(self.bn2(self.conv2(x))))
+        x = self.pool3(F.relu(self.bn3(self.conv3(x))))
+        
+        # Flatten for FC layers
+        x = x.view(x.size(0), -1)
+        
+        # FC layers
+        x = F.relu(self.bn4(self.fc1(x)))
         x = self.dropout1(x)
         
-        x = F.relu(self.bn2(self.fc2(x)))
+        x = F.relu(self.bn5(self.fc2(x)))
         x = self.dropout2(x)
         
-        x = F.relu(self.bn3(self.fc3(x)))
-        x = self.dropout3(x)
-        
-        x = self.fc4(x)
+        x = self.fc3(x)
         return x
 
 class EmotionModelTrainer:
@@ -189,57 +295,71 @@ class EmotionModelTrainer:
         return results
     
     def train_optimized_models(self, X_train, X_test, y_train, y_test):
-        """Train optimized ML models for better accuracy"""
-        # Define optimized models
+        """Train optimized ML models for better accuracy targeting 85%"""
+        # Define highly optimized models for 85% accuracy target
         models = {
-            'Random Forest': RandomForestClassifier(
-                n_estimators=200, 
-                max_depth=20,
-                min_samples_split=5,
-                min_samples_leaf=2,
-                random_state=42,
-                n_jobs=-1
-            ),
-            'Extra Trees': RandomForestClassifier(
-                n_estimators=200,
-                max_depth=25,
-                min_samples_split=4,
+            'Random Forest Enhanced': RandomForestClassifier(
+                n_estimators=500,  # Increased for better accuracy
+                max_depth=30,
+                min_samples_split=3,
                 min_samples_leaf=1,
+                max_features='sqrt',
                 random_state=42,
                 n_jobs=-1,
-                bootstrap=False
+                oob_score=True,
+                class_weight='balanced'  # Handle class imbalance
             ),
-            'SVM': SVC(
+            'Extra Trees Enhanced': RandomForestClassifier(
+                n_estimators=500,
+                max_depth=35,
+                min_samples_split=2,
+                min_samples_leaf=1,
+                max_features='sqrt',
+                random_state=42,
+                n_jobs=-1,
+                bootstrap=False,
+                class_weight='balanced'
+            ),
+            'SVM Enhanced': SVC(
                 kernel='rbf', 
-                C=10.0,
+                C=50.0,  # Increased regularization
                 gamma='scale',
                 random_state=42, 
-                probability=True
+                probability=True,
+                class_weight='balanced',
+                decision_function_shape='ovr'
             ),
-            'Gradient Boosting': GradientBoostingClassifier(
-                n_estimators=200,
-                learning_rate=0.1,
-                max_depth=8,
-                min_samples_split=5,
-                random_state=42
+            'Gradient Boosting Enhanced': GradientBoostingClassifier(
+                n_estimators=300,
+                learning_rate=0.05,  # Lower learning rate for better accuracy
+                max_depth=10,
+                min_samples_split=4,
+                min_samples_leaf=2,
+                subsample=0.8,
+                random_state=42,
+                validation_fraction=0.1,
+                n_iter_no_change=10
             ),
-            'MLP Sklearn': MLPClassifier(
-                hidden_layer_sizes=(256, 128, 64),
+            'MLP Enhanced': MLPClassifier(
+                hidden_layer_sizes=(512, 256, 128, 64),  # Deeper network
                 activation='relu',
                 solver='adam',
-                alpha=0.001,
+                alpha=0.0001,  # Reduced regularization
                 learning_rate_init=0.001,
-                max_iter=500,
+                max_iter=1000,
                 random_state=42,
                 early_stopping=True,
-                validation_fraction=0.1
+                validation_fraction=0.15,
+                n_iter_no_change=20,
+                learning_rate='adaptive'
             ),
-            'Logistic Regression': LogisticRegression(
-                C=1.0,
+            'Logistic Regression Enhanced': LogisticRegression(
+                C=5.0,  # Increased regularization
                 solver='lbfgs',
                 random_state=42, 
-                max_iter=2000,
-                multi_class='ovr'
+                max_iter=3000,
+                multi_class='multinomial',
+                class_weight='balanced'
             )
         }
         
@@ -462,7 +582,7 @@ class EmotionModelTrainer:
             with open(MODEL_DIR / 'mlp_info.pkl', 'wb') as f:
                 pickle.dump(model_info, f)
         else:
-            joblib.dump(self.best_model, MODEL_PATH)
+            joblib.dump(self.models[self.best_model_name], MODEL_PATH)
         
         # Save model metadata
         metadata = {
@@ -545,13 +665,13 @@ class EmotionModelTrainer:
         return emotion, confidence
     
     def train_complete_pipeline(self, data_dir):
-        """Complete training pipeline with parallel processing"""
-        print("🚀 Starting optimized training pipeline with parallel processing...")
+        """Complete training pipeline with parallel processing using RAVDESS dataset only"""
+        print("🚀 Starting optimized training pipeline with RAVDESS dataset only...")
         start_time = time.time()
         
-        # Load data
-        data_parser = CremaDataParser()
-        audio_files, emotions = data_parser.load_crema_data(data_dir)
+        # Load RAVDESS data only (no CREMA-D)
+        data_parser = RavdessDataParser()
+        audio_files, emotions = data_parser.load_ravdess_data(data_dir)
         
         print(f"📁 Loaded {len(audio_files)} audio files")
         print(f"🎯 Target: Extract features from all {len(audio_files)} files")
