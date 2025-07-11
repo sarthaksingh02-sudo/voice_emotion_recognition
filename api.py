@@ -3,17 +3,28 @@ from typing import Dict
 import librosa
 import numpy as np
 import uuid
-from model_trainer import EmotionModelTrainer
+import joblib
 from audio_processor import AudioProcessor
 from database_logger import log_prediction, initialize_database
 from pathlib import Path
 import sqlite3
 from contextlib import closing
+from config import EMOTION_LABELS, MODEL_DIR
 
 app = FastAPI(title="Emotion Recognition API", version="1.1.0")
 
 audio_processor = AudioProcessor()
-model_trainer = EmotionModelTrainer()
+
+# Load trained models
+try:
+    model = joblib.load(MODEL_DIR / "emotion_model.pkl")
+    scaler = joblib.load(MODEL_DIR / "scaler.pkl")
+    label_encoder = joblib.load(MODEL_DIR / "label_encoder.pkl")
+    MODEL_LOADED = True
+    print("✅ Models loaded successfully!")
+except Exception as e:
+    MODEL_LOADED = False
+    print(f"❌ Error loading models: {e}")
 
 # Ensure database is initialized
 initialize_database()
@@ -52,14 +63,34 @@ async def predict_emotion(file: UploadFile = File(...)):
         if features is None:
             raise HTTPException(status_code=400, detail="Failed to extract features from audio")
         
-        # Predict using best available model
-        # This is a placeholder - we'll need to load actual trained models
-        emotion = "happy"  # Placeholder
-        confidence = 0.85  # Placeholder
-        model_name = "SVM"  # Placeholder
+        # Check if models are loaded
+        if not MODEL_LOADED:
+            raise HTTPException(status_code=500, detail="Models not loaded. Please train models first.")
         
-        # Log the prediction
-        log_prediction(emotion, confidence, model_name, session_id)
+        # Predict using the loaded model
+        try:
+            # Reshape features for prediction
+            features_scaled = scaler.transform(features.reshape(1, -1))
+            
+            # Get prediction
+            prediction = model.predict(features_scaled)[0]
+            probabilities = model.predict_proba(features_scaled)[0]
+            
+            # Get emotion name
+            emotion_idx = label_encoder.inverse_transform([prediction])[0]
+            emotion = EMOTION_LABELS.get(emotion_idx, "unknown")
+            
+            # Get confidence (max probability)
+            confidence = float(np.max(probabilities))
+            
+            # Get model name
+            model_name = type(model).__name__
+            
+            # Log the prediction
+            log_prediction(emotion, confidence, model_name, session_id)
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
         
         return {
             "emotion": emotion,
