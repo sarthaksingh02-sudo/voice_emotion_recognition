@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎭 Emotion Recognition System v1.1</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-theater-masks"></i> Emotion Recognition System</h1>
+                <p class="version">Version 1.1 - Advanced AI-Powered Emotion Analysis</p>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Checking API...</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Left Panel -->
+            <div class="left-panel">
+                <!-- File Upload Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-file-audio"></i>
+                        <h3>Audio File Upload</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="upload-area" id="uploadArea">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Drag & drop your audio file here</p>
+                            <p class="small">or click to browse</p>
+                            <input type="file" id="fileInput" accept=".wav,.mp3,.m4a,.flac" hidden>
+                        </div>
+                        <div class="file-info" id="fileInfo" style="display: none;">
+                            <i class="fas fa-file-audio"></i>
+                            <span id="fileName"></span>
+                            <button class="remove-btn" id="removeFile">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prediction Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-brain"></i>
+                        <h3>Emotion Analysis</h3>
+                    </div>
+                    <div class="card-content">
+                        <button class="predict-btn" id="predictBtn" disabled>
+                            <i class="fas fa-play"></i>
+                            Analyze Emotion
+                        </button>
+                        <div class="progress-bar" id="progressBar" style="display: none;">
+                            <div class="progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Analysis Results</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="result" id="result" style="display: none;">
+                            <div class="emotion-display">
+                                <div class="emotion-icon" id="emotionIcon">🎭</div>
+                                <div class="emotion-text">
+                                    <h4 id="emotionName">No analysis yet</h4>
+                                    <p id="confidenceText">--%</p>
+                                </div>
+                            </div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" id="confidenceFill"></div>
+                            </div>
+                            <div class="model-info">
+                                <small id="modelInfo">Model: --</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Predictions -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-history"></i>
+                        <h3>Recent Analysis</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="recent-list" id="recentList">
+                            <p class="no-data">No recent analysis</p>
+                        </div>
+                        <button class="secondary-btn" id="loadLogsBtn">
+                            <i class="fas fa-refresh"></i>
+                            Load Recent Logs
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="right-panel">
+                <!-- Waveform Visualization -->
+                <div class="card full-height">
+                    <div class="card-header">
+                        <i class="fas fa-wave-square"></i>
+                        <h3>Audio Waveform</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="waveform-container">
+                            <canvas id="waveformCanvas"></canvas>
+                            <div class="waveform-placeholder" id="waveformPlaceholder">
+                                <i class="fas fa-music"></i>
+                                <p>Upload an audio file to view waveform</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2025 Emotion Recognition System v1.1 - Advanced AI-Powered Analysis</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

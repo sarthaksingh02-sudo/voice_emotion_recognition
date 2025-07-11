@@ -22,6 +22,7 @@ import json
 import threading
 import time
 from datetime import datetime
+from audio_processor import AudioProcessor
 
 class EmotionRecognitionAdvancedGUI(QMainWindow):
     def __init__(self):
@@ -30,6 +31,11 @@ class EmotionRecognitionAdvancedGUI(QMainWindow):
         self.setGeometry(100, 100, 1200, 800)
         self.currentFile = None
         self.api_base_url = "http://127.0.0.1:8000"
+        
+        # Initialize local prediction components
+        self.processor = AudioProcessor()
+        self.load_local_models()
+        
         self.setupUI()
         self.setupStyle()
         self.checkAPIConnection()
@@ -166,6 +172,8 @@ class EmotionRecognitionAdvancedGUI(QMainWindow):
         
         # Waveform plot
         self.plot_widget = PlotWidget()
+        self.plot_widget.plotItem.setMouseEnabled(x=True, y=True)
+        self.plot_widget.plotItem.enableAutoRange(axis='xy')
         self.plot_widget.setLabel('left', 'Amplitude')
         self.plot_widget.setLabel('bottom', 'Time', units='s')
         self.plot_widget.setTitle('Audio Waveform')
@@ -196,6 +204,19 @@ class EmotionRecognitionAdvancedGUI(QMainWindow):
         right_widget.addTab(stats_tab, "📈 Statistics")
         
         return right_widget
+
+    def load_local_models(self):
+        """Load models for local prediction (fallback)"""
+        try:
+            model_dir = Path('models')
+            self.model = joblib.load(model_dir / 'emotion_model.pkl')
+            self.scaler = joblib.load(model_dir / 'scaler.pkl')
+            self.label_encoder = joblib.load(model_dir / 'label_encoder.pkl')
+            self.local_models_loaded = True
+            print("✅ Local models loaded successfully!")
+        except Exception as e:
+            self.local_models_loaded = False
+            print(f"❌ Could not load local models: {e}")
 
     def setupStyle(self):
         # Set a modern style
@@ -273,16 +294,25 @@ class EmotionRecognitionAdvancedGUI(QMainWindow):
             self.predict_button.setEnabled(True)
             self.statusBar.showMessage(f"Loaded: {Path(file_path).name}")
 
+    def setWaveformRange(self, y):
+        y_min, y_max = np.min(y), np.max(y)
+        y_range = y_max - y_min
+        padding = y_range * 0.1 if y_range > 0 else 0.1
+        self.plot_widget.plotItem.setYRange(y_min - padding, y_max + padding)
+        self.plot_widget.plotItem.enableAutoRange(axis='x')
+
     def displayWaveform(self, file_path):
         try:
-            y, sr = librosa.load(file_path, sr=None)
-            time = np.linspace(0, len(y) / sr, num=len(y))
-            
             # Clear previous plot
             self.plot_widget.clear()
             
-            # Plot waveform
-            self.plot_widget.plot(time, y, pen='b', name='Waveform')
+            # Load audio
+            y, sr = librosa.load(file_path, sr=None)
+            time = np.linspace(0, len(y) / sr, num=len(y))
+            
+            # Plot waveform with better styling
+            self.plot_widget.plot(time, y, pen=pg.mkPen(color='#2E86AB', width=1))
+            self.setWaveformRange(y)
             self.plot_widget.setTitle(f'Audio Waveform - {Path(file_path).name}')
             
         except Exception as e:
@@ -333,24 +363,70 @@ class EmotionRecognitionAdvancedGUI(QMainWindow):
         threading.Thread(target=self._predict_worker, daemon=True).start()
 
     def _predict_worker(self):
+        # Try API first, then fallback to local prediction
         try:
+            # Try API prediction first
             with open(self.currentFile, 'rb') as f:
                 files = {'file': f}
-                response = requests.post(f"{self.api_base_url}/predict", files=files)
+                response = requests.post(f"{self.api_base_url}/predict", files=files, timeout=5)
             
             if response.status_code == 200:
                 result = response.json()
                 emotion = result.get('emotion', 'Unknown')
                 confidence = result.get('confidence', 0)
-                model = result.get('model', 'Unknown')
+                model = f"API-{result.get('model', 'Unknown')}"
                 
                 # Update UI in main thread
                 self.updatePredictionResult(emotion, confidence, model)
-            else:
-                self.updatePredictionResult("Error", 0, f"HTTP {response.status_code}")
+                return
                 
         except Exception as e:
-            self.updatePredictionResult("Error", 0, str(e))
+            print(f"API prediction failed: {e}")
+        
+        # Fallback to local prediction
+        if self.local_models_loaded:
+            try:
+                result = self._predict_local()
+                if result:
+                    emotion = result['emotion']
+                    confidence = result['confidence']
+                    model = "Local-SVM"
+                    self.updatePredictionResult(emotion, confidence, model)
+                    return
+            except Exception as e:
+                print(f"Local prediction failed: {e}")
+        
+        # If all fails
+        self.updatePredictionResult("Error", 0, "Both API and local prediction failed")
+    
+    def _predict_local(self):
+        """Local prediction using loaded models (similar to manual_voice_test.py)"""
+        try:
+            # Extract features using the same method as manual_voice_test.py
+            features = self.processor.process_audio_file(self.currentFile)
+            
+            if features is None:
+                return None
+            
+            # Scale features
+            features_scaled = self.scaler.transform(features.reshape(1, -1))
+            
+            # Make prediction
+            prediction = self.model.predict(features_scaled)[0]
+            probabilities = self.model.predict_proba(features_scaled)[0]
+            
+            # Get emotion label
+            emotion = self.label_encoder.inverse_transform([prediction])[0]
+            confidence = max(probabilities)
+            
+            return {
+                'emotion': emotion,
+                'confidence': confidence
+            }
+            
+        except Exception as e:
+            print(f"Local prediction error: {e}")
+            return None
 
     def updatePredictionResult(self, emotion, confidence, model):
         # This method should be called from the main thread
