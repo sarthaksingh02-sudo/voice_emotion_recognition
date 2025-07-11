@@ -12,6 +12,14 @@ import os
 from pathlib import Path
 warnings.filterwarnings('ignore')
 
+# Import noise reduction library
+try:
+    import noisereduce as nr
+    NOISE_REDUCTION_AVAILABLE = True
+except ImportError:
+    NOISE_REDUCTION_AVAILABLE = False
+    print("Warning: noisereduce library not available. Audio will be processed without noise reduction.")
+
 from config import *
 
 class AudioProcessor:
@@ -82,6 +90,19 @@ class AudioProcessor:
             print(f"Error loading audio file {file_path}: {e}")
             return None, None
     
+    def reduce_noise(self, audio):
+        """Apply noise reduction to audio signal"""
+        if not NOISE_REDUCTION_AVAILABLE or audio is None:
+            return audio
+            
+        try:
+            # Apply noise reduction
+            reduced_audio = nr.reduce_noise(y=audio, sr=self.sample_rate)
+            return reduced_audio
+        except Exception as e:
+            # If noise reduction fails, return original audio
+            return audio
+    
     def preprocess_audio(self, audio):
         """Preprocess audio signal with robust error handling"""
         if audio is None:
@@ -98,6 +119,9 @@ class AudioProcessor:
             
             if len(audio) == 0:
                 return None
+            
+            # Apply noise reduction early in the pipeline
+            audio = self.reduce_noise(audio)
             
             # Normalize audio (handle zero variance)
             if np.std(audio) > 0:
